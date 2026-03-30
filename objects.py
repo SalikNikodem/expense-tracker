@@ -2,12 +2,11 @@ from datetime import datetime
 from pathlib import Path
 import csv
 
-from urllib3.filepost import writer
 
 EXPENSES = Path(__file__).resolve().parent / 'expenses.csv'
 
 class Expense:
-    def __init__(self, id, description=None, amount=None, date=None):
+    def __init__(self, id, date=None, description=None, amount=None):
         self.description = description
         self.amount = amount
         self.id = id
@@ -35,7 +34,7 @@ def load_expenses(object=False):
             objects = []
             for row in reader:
                 if row:
-                    obj = Expense(row[0],row[1],row[2],row[3])
+                    obj = Expense(id = row[0], date = row[1],description=row[2],amount=row[3])
                     objects.append(obj)
             return objects
 
@@ -87,9 +86,9 @@ def update_expense(id, description=None, amount=None, date=None):
     if description or amount or date:
         for expense in expenses:
             if expense[0] == str(id):
-                if description: expense[1] = description
-                if amount: expense[2] = amount
-                if date: expense[3] = date
+                if date: expense[1] = date
+                if description: expense[2] = description
+                if amount: expense[3] = amount
                 save_expenses(expenses)
                 print(f"Expense id: {id} updated")
                 return
@@ -100,10 +99,10 @@ def update_expense(id, description=None, amount=None, date=None):
 
 def view_expenses(month=None):
     expenses = load_expenses(object=True)
-    if not month:
+    if month is None:
         for expense in expenses:
             print(expense)
-            return
+        return
     month_expenses = [expense for expense in expenses if expense.get_month() == month]
     if len(month_expenses) == 0:
         print(f"Error: no expenses in month {month}")
