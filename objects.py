@@ -7,7 +7,7 @@ from urllib3.filepost import writer
 EXPENSES = Path(__file__).resolve().parent / 'expenses.csv'
 
 class Expense:
-    def __init__(self, id, date=None, description=None, amount=None):
+    def __init__(self, id, description=None, amount=None, date=None):
         self.description = description
         self.amount = amount
         self.id = id
@@ -87,9 +87,9 @@ def update_expense(id, description=None, amount=None, date=None):
     if description or amount or date:
         for expense in expenses:
             if expense[0] == str(id):
-                if description: expense[2] = description
-                if amount: expense[3] = amount
-                if date: expense[1] = date
+                if description: expense[1] = description
+                if amount: expense[2] = amount
+                if date: expense[3] = date
                 save_expenses(expenses)
                 print(f"Expense id: {id} updated")
                 return
