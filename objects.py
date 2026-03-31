@@ -2,6 +2,20 @@ from datetime import datetime
 from pathlib import Path
 import csv
 
+def validate_amount(func):
+    def wrapper(*args, **kwargs):
+        amount = kwargs.get('amount')
+
+        if amount is None and len(args) > 2:
+            amount = args[2]
+
+        if amount is not None:
+            if amount <= 0:
+                print("Please provide positive amount")
+                return
+        return func(*args, **kwargs)
+    return wrapper
+
 
 EXPENSES = Path(__file__).resolve().parent / 'expenses.csv'
 
@@ -56,7 +70,7 @@ def save_expenses(expenses):
         writer.writerow(['ID', 'Date', 'Description', 'Amount'])
         writer.writerows(expenses)
 
-
+@validate_amount
 def add_expense(description, amount):
     expenses = load_expenses()
 
@@ -81,6 +95,7 @@ def delete_expense(id):
     save_expenses(u_expenses)
     print(f"Expense id: {id} deleted")
 
+@validate_amount
 def update_expense(id, description=None, amount=None, date=None):
     expenses = load_expenses()
     if description or amount or date:
