@@ -1,10 +1,15 @@
 from datetime import datetime
 from pathlib import Path
 import csv
+import inspect
 
 def validate_amount(func):
     def wrapper(*args, **kwargs):
-        amount = kwargs.get('amount')
+        signature = inspect.signature(func)
+        bound_args = signature.bind(*args, **kwargs)
+        bound_args.apply_defaults()
+
+        amount = bound_args.arguments.get('amount')
 
         if amount is None and len(args) > 2:
             amount = args[2]
@@ -76,7 +81,7 @@ def add_expense(description, amount):
 
     new_id = max([int(expense[0]) for expense in expenses if expense], default=0) + 1
 
-    expense = Expense(new_id, description, amount)
+    expense = Expense(id = new_id, description=description, amount=amount)
 
     with open(EXPENSES, 'a',  newline='', encoding='utf-8') as ff:
         editor = csv.writer(ff)
