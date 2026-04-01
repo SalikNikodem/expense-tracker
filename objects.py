@@ -11,9 +11,6 @@ def validate_amount(func):
 
         amount = bound_args.arguments.get('amount')
 
-        if amount is None and len(args) > 2:
-            amount = args[2]
-
         if amount is not None:
             if amount <= 0:
                 print("Please provide positive amount")
@@ -25,10 +22,11 @@ def validate_amount(func):
 EXPENSES = Path(__file__).resolve().parent / 'expenses.csv'
 
 class Expense:
-    def __init__(self, id, date=None, description=None, amount=None):
+    def __init__(self, id, date=None, description=None, amount=None, category=None):
         self.description = description
         self.amount = amount
         self.id = id
+        self.category = category
 
         if date:
             self.date = date
@@ -37,13 +35,16 @@ class Expense:
 
 
     def __str__(self):
-        return f"{str(self.id):<5} {self.date:<12} {self.description:<15} {self.amount}"
+        return f"{str(self.id):<5} {self.date:<12} {self.description:<15} {self.amount:<5} {self.category}"
 
     def to_list(self):
-        return [self.id, self.date, self.description, self.amount]
+        return [self.id, self.date, self.description, self.amount, self.category]
 
     def get_month(self):
         return int(self.date[5:7])
+
+    def get_category(self):
+        return self.category
 
 def load_expenses(object=False):
     if object:
@@ -53,14 +54,14 @@ def load_expenses(object=False):
             objects = []
             for row in reader:
                 if row:
-                    obj = Expense(id = row[0], date = row[1],description=row[2],amount=row[3])
+                    obj = Expense(id = row[0], date = row[1],description=row[2],amount=row[3], category=row[4])
                     objects.append(obj)
             return objects
 
     if not EXPENSES.exists() or EXPENSES.stat().st_size == 0:
         with open(EXPENSES, 'w', newline='', encoding='utf-8') as ff:
             editor = csv.writer(ff)
-            editor.writerow(['ID', 'Date', 'Description', 'Amount'])
+            editor.writerow(['ID', 'Date', 'Description', 'Amount', 'Category'])
             return []
     else:
         with open(EXPENSES, 'r', encoding='utf-8') as ff:
@@ -72,16 +73,16 @@ def load_expenses(object=False):
 def save_expenses(expenses):
     with open(EXPENSES, 'w', newline='', encoding='utf-8') as ff:
         writer = csv.writer(ff)
-        writer.writerow(['ID', 'Date', 'Description', 'Amount'])
+        writer.writerow(['ID', 'Date', 'Description', 'Amount', 'Category'])
         writer.writerows(expenses)
 
 @validate_amount
-def add_expense(description, amount):
+def add_expense(description, amount, category):
     expenses = load_expenses()
 
     new_id = max([int(expense[0]) for expense in expenses if expense], default=0) + 1
 
-    expense = Expense(id = new_id, description=description, amount=amount)
+    expense = Expense(id = new_id, description=description, amount=amount, category=category)
 
     with open(EXPENSES, 'a',  newline='', encoding='utf-8') as ff:
         editor = csv.writer(ff)
@@ -101,14 +102,15 @@ def delete_expense(id):
     print(f"Expense id: {id} deleted")
 
 @validate_amount
-def update_expense(id, description=None, amount=None, date=None):
+def update_expense(id, description=None, amount=None, date=None, category=None):
     expenses = load_expenses()
-    if description or amount or date:
+    if description or amount or date or category:
         for expense in expenses:
             if expense[0] == str(id):
                 if date: expense[1] = date
                 if description: expense[2] = description
                 if amount: expense[3] = amount
+                if category: expense[4] = category
                 save_expenses(expenses)
                 print(f"Expense id: {id} updated")
                 return
@@ -117,15 +119,21 @@ def update_expense(id, description=None, amount=None, date=None):
     print("Error: No description or amount provided")
 
 
-def view_expenses(month=None):
+def view_expenses(month=None, category=None):
     expenses = load_expenses(object=True)
-    if month is None:
+    if month is None and category is None:
         for expense in expenses:
             print(expense)
         return
-    month_expenses = [expense for expense in expenses if expense.get_month() == month]
+    if category and month:
+        month_expenses = [expense for expense in expenses if expense.get_month() == month and expense.get_category() == category]
+    elif category is not None and month is None:
+        month_expenses = [expense for expense in expenses if expense.get_category() == category]
+    else:
+        month_expenses = [expense for expense in expenses if expense.get_month() == month]
+
     if len(month_expenses) == 0:
-        print(f"Error: no expenses in month {month}")
+        print(f"Error: no expenses in month {month} or with category {category}")
         return
     for expense in month_expenses:
         print(expense)
